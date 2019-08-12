@@ -37,10 +37,19 @@ func (gk *Gripkit) Serve() error {
 		handler = gk.grpcWebServer.ServeHTTP
 	}
 
+	httpHandler := http.HandlerFunc(handler)
+
+	if gk.options.httpOptions.TLSCertPath == "" || gk.options.httpOptions.TLSKeyPath == "" {
+		return http.ListenAndServe(
+			gk.options.httpOptions.Addr,
+			httpHandler,
+		)
+	}
+
 	return http.ListenAndServeTLS(
 		gk.options.httpOptions.Addr,
 		gk.options.httpOptions.TLSCertPath,
 		gk.options.httpOptions.TLSKeyPath,
-		http.HandlerFunc(handler),
+		httpHandler,
 	)
 }

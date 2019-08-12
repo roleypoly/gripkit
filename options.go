@@ -26,7 +26,7 @@ var (
 		grpcWebOptions: []grpcweb.Option{},
 		grpcOptions:    []grpc.ServerOption{},
 		httpOptions: HTTPOptions{
-			Addr:        ":8443",
+			Addr:        ":8080",
 			TLSKeyPath:  "",
 			TLSCertPath: "",
 		},
