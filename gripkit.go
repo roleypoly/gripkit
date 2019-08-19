@@ -2,6 +2,7 @@
 package gripkit // import "github.com/roleypoly/gripkit"
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -38,6 +39,17 @@ func (gk *Gripkit) Serve() error {
 	}
 
 	httpHandler := http.HandlerFunc(handler)
+
+	if gk.options.wrapDebug {
+		httpHandler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+			source := "gRPC native"
+			if req.Header.Get("X-Grpc-Web") == "1" {
+				source = "gRPC web"
+			}
+			log.Println("gRPC debug: url:", req.URL, "source:", source)
+			handler(resp, req)
+		})
+	}
 
 	if gk.options.httpOptions.TLSCertPath == "" || gk.options.httpOptions.TLSKeyPath == "" {
 		return http.ListenAndServe(

@@ -18,6 +18,7 @@ type options struct {
 	grpcWebOptions []grpcweb.Option
 	httpOptions    HTTPOptions
 	grpcOptions    []grpc.ServerOption
+	wrapDebug      bool
 }
 
 var (
@@ -25,6 +26,7 @@ var (
 		wrapGrpcWeb:    false,
 		grpcWebOptions: []grpcweb.Option{},
 		grpcOptions:    []grpc.ServerOption{},
+		wrapDebug:      false,
 		httpOptions: HTTPOptions{
 			Addr:        ":8080",
 			TLSKeyPath:  "",
@@ -43,6 +45,12 @@ func evaluateOptions(optionList ...Option) *options {
 	}
 
 	return evaluatedOptions
+}
+
+func WithDebug() Option {
+	return func(o *options) {
+		o.wrapDebug = true
+	}
 }
 
 func WithGrpcWeb(opts ...grpcweb.Option) Option {
