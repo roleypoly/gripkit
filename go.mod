@@ -10,4 +10,5 @@ require (
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
 	google.golang.org/grpc v1.28.0
+	k8s.io/klog v1.0.0
 )

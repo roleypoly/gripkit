@@ -2,11 +2,11 @@
 package gripkit // import "github.com/roleypoly/gripkit"
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
+	"k8s.io/klog"
 )
 
 type Gripkit struct {
@@ -14,6 +14,7 @@ type Gripkit struct {
 	httpHandler   *func(w http.ResponseWriter, r *http.Request)
 	options       *options
 	grpcWebServer *grpcweb.WrappedGrpcServer
+	ready         bool
 }
 
 func Create(options ...Option) *Gripkit {
@@ -25,11 +26,18 @@ func Create(options ...Option) *Gripkit {
 		grpcWrapper = grpcweb.WrapServer(grpcServer, gkOptions.grpcWebOptions...)
 	}
 
-	return &Gripkit{
+	gk := &Gripkit{
 		Server:        grpcServer,
 		grpcWebServer: grpcWrapper,
 		options:       gkOptions,
+		ready:         false,
 	}
+
+	if gk.options.healthz != nil {
+		go gk.startHealthzServer()
+	}
+
+	return gk
 }
 
 func (gk *Gripkit) Serve() error {
@@ -46,21 +54,19 @@ func (gk *Gripkit) Serve() error {
 			if req.Header.Get("X-Grpc-Web") == "1" {
 				source = "gRPC web"
 			}
-			log.Println("gRPC debug: url:", req.URL, "source:", source)
+			klog.Infoln("gRPC debug: url:", req.URL, "source:", source)
 			handler(resp, req)
 		})
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", gk.options.healthzHandler)
-	mux.HandleFunc("/", httpHandler)
-
 	if gk.options.httpOptions.TLSCertPath == "" || gk.options.httpOptions.TLSKeyPath == "" {
 		return http.ListenAndServe(
 			gk.options.httpOptions.Addr,
-			mux,
+			httpHandler,
 		)
 	}
+
+	gk.ready = true
 
 	return http.ListenAndServeTLS(
 		gk.options.httpOptions.Addr,
@@ -70,7 +76,20 @@ func (gk *Gripkit) Serve() error {
 	)
 }
 
-func defaultHealthHandler(rw http.ResponseWriter, r *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte(`OK`))
+func (gk *Gripkit) startHealthzServer() {
+	klog.Infoln("Starting /healthz server on", gk.options.healthz.Addr)
+	err := http.ListenAndServe(gk.options.healthz.Addr, gk.options.healthz.Handler)
+	if err != nil {
+		klog.Errorln("/healthz server failed to start", err)
+	}
+}
+
+func (gk *Gripkit) defaultHealthHandler(rw http.ResponseWriter, r *http.Request) {
+	if gk.ready {
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(`OK`))
+	} else {
+		rw.WriteHeader(http.StatusServiceUnavailable)
+		rw.Write([]byte(`Not Ready`))
+	}
 }

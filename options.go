@@ -13,6 +13,13 @@ type HTTPOptions struct {
 	Addr        string
 }
 
+type HealthzOptions struct {
+	Handler http.HandlerFunc
+
+	// Optional IP:Port string, defaults to :10456
+	Addr string
+}
+
 type Option func(*options)
 
 type options struct {
@@ -21,10 +28,18 @@ type options struct {
 	httpOptions    HTTPOptions
 	grpcOptions    []grpc.ServerOption
 	wrapDebug      bool
-	healthzHandler http.HandlerFunc
+	healthz        *HealthzOptions
 }
 
 var (
+	healthz = &HealthzOptions{
+		Handler: func(rw http.ResponseWriter, r *http.Request) {
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(`OK`))
+		},
+		Addr: ":10456",
+	}
+
 	defaultOptions = &options{
 		wrapGrpcWeb:    false,
 		grpcWebOptions: []grpcweb.Option{},
@@ -35,7 +50,7 @@ var (
 			TLSKeyPath:  "",
 			TLSCertPath: "",
 		},
-		healthzHandler: defaultHealthHandler,
+		healthz: healthz,
 	}
 )
 
@@ -76,9 +91,18 @@ func WithHTTPOptions(opts HTTPOptions) Option {
 	}
 }
 
-// WithHealthz adds a custom /healthz handler to the gRPC HTTP server.
-func WithHealthz(handlerFn http.HandlerFunc) Option {
+// WithHealthz adds a custom /healthz handler to the gRPC HTTP server. Pass nil to disable.
+func WithHealthz(hzOpts *HealthzOptions) Option {
 	return func(o *options) {
-		o.healthzHandler = handlerFn
+		if hzOpts == nil {
+			o.healthz = nil
+			return
+		}
+
+		if hzOpts.Addr != "" {
+			o.healthz.Addr = hzOpts.Addr
+		}
+
+		o.healthz.Handler = hzOpts.Handler
 	}
 }
