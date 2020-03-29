@@ -14,7 +14,8 @@ type HTTPOptions struct {
 }
 
 type HealthzOptions struct {
-	Handler http.HandlerFunc
+	UseDefault bool
+	Handler    http.HandlerFunc
 
 	// Optional IP:Port string, defaults to :10456
 	Addr string
@@ -32,14 +33,6 @@ type options struct {
 }
 
 var (
-	healthz = &HealthzOptions{
-		Handler: func(rw http.ResponseWriter, r *http.Request) {
-			rw.WriteHeader(http.StatusOK)
-			rw.Write([]byte(`OK`))
-		},
-		Addr: ":10456",
-	}
-
 	defaultOptions = &options{
 		wrapGrpcWeb:    false,
 		grpcWebOptions: []grpcweb.Option{},
@@ -50,7 +43,9 @@ var (
 			TLSKeyPath:  "",
 			TLSCertPath: "",
 		},
-		healthz: healthz,
+		healthz: &HealthzOptions{
+			UseDefault: true,
+		},
 	}
 )
 

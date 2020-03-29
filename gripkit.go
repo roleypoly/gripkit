@@ -34,6 +34,14 @@ func Create(options ...Option) *Gripkit {
 	}
 
 	if gk.options.healthz != nil {
+		if gk.options.healthz.UseDefault {
+			if gk.options.healthz.Addr == "" {
+				gk.options.healthz.Addr = ":10456"
+			}
+
+			gk.options.healthz.Handler = gk.defaultHealthHandler
+		}
+
 		go gk.startHealthzServer()
 	}
 
