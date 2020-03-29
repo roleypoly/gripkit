@@ -1,6 +1,8 @@
 package gripkit
 
 import (
+	"net/http"
+
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"google.golang.org/grpc"
 )
@@ -19,6 +21,7 @@ type options struct {
 	httpOptions    HTTPOptions
 	grpcOptions    []grpc.ServerOption
 	wrapDebug      bool
+	healthzHandler http.HandlerFunc
 }
 
 var (
@@ -32,6 +35,7 @@ var (
 			TLSKeyPath:  "",
 			TLSCertPath: "",
 		},
+		healthzHandler: defaultHealthHandler,
 	}
 )
 
@@ -69,5 +73,12 @@ func WithOptions(opts ...grpc.ServerOption) Option {
 func WithHTTPOptions(opts HTTPOptions) Option {
 	return func(o *options) {
 		o.httpOptions = opts
+	}
+}
+
+// WithHealthz adds a custom /healthz handler to the gRPC HTTP server.
+func WithHealthz(handlerFn http.HandlerFunc) Option {
+	return func(o *options) {
+		o.healthzHandler = handlerFn
 	}
 }

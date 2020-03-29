@@ -51,10 +51,14 @@ func (gk *Gripkit) Serve() error {
 		})
 	}
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", gk.options.healthzHandler)
+	mux.HandleFunc("/", httpHandler)
+
 	if gk.options.httpOptions.TLSCertPath == "" || gk.options.httpOptions.TLSKeyPath == "" {
 		return http.ListenAndServe(
 			gk.options.httpOptions.Addr,
-			httpHandler,
+			mux,
 		)
 	}
 
@@ -64,4 +68,9 @@ func (gk *Gripkit) Serve() error {
 		gk.options.httpOptions.TLSKeyPath,
 		httpHandler,
 	)
+}
+
+func defaultHealthHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte(`OK`))
 }
