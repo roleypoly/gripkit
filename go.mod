@@ -9,6 +9,6 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
-	google.golang.org/grpc v1.28.0
+	google.golang.org/grpc v1.29.1
 	k8s.io/klog v1.0.0
 )
